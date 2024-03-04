@@ -22,37 +22,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.spongepowered.common.mixin.inventory.event.world.inventory;
+package org.spongepowered.common.event.tracking.context.transaction.inventory;
 
-import net.minecraft.world.Container;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.event.Cause;
+import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
+import org.spongepowered.api.item.inventory.Inventory;
+import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.common.event.tracking.PhaseContext;
-import org.spongepowered.common.event.tracking.PhaseTracker;
-import org.spongepowered.common.inventory.fabric.Fabric;
 
-@Mixin(Slot.class)
-public abstract class SlotMixin_Inventory {
+import java.util.List;
+import java.util.Optional;
 
-    // @formatter:off
-    @Shadow @Final public Container container;
-    // @formatter:on
+public class InventoryTransaction extends InventoryBasedTransaction {
 
-    @Inject(method = "onQuickCraft(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V", at = @At("HEAD"))
-    private void inventory$onQuickCraft(final ItemStack slotStack, final ItemStack stackTaken, final CallbackInfo ci) {
-        final PhaseContext<@NonNull ?> ctx = PhaseTracker.SERVER.getPhaseContext();
-        ctx.getTransactor().logShiftCraftingResult((Slot) (Object) this, stackTaken);
+    public InventoryTransaction(final Inventory inventory) {
+        super(inventory);
     }
 
-    @Inject(method = "setChanged", at = @At("HEAD"))
-    public void inventory$onSetChanged(final CallbackInfo ci) {
-        ((Fabric) this.container).fabric$captureContainer();
+    @Override
+    Optional<ChangeInventoryEvent> createInventoryEvent(final List<SlotTransaction> slotTransactions,
+                                                        final List<Entity> entities, final PhaseContext<@NonNull ?> context,
+                                                        final Cause cause) {
+        //TODO: Actually throw event
+        return Optional.empty();
     }
 }
