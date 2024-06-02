@@ -24,22 +24,44 @@
  */
 package org.spongepowered.common.inventory.custom;
 
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.api.item.inventory.ContainerType;
+import org.spongepowered.api.item.inventory.entity.PlayerInventory;
 import org.spongepowered.common.bridge.world.inventory.container.TrackedMenuBridge;
 
 public class CustomContainer extends AbstractContainerMenu {
 
-    public CustomInventory inv;
+    public final ViewableCustomInventory inv;
 
-    public CustomContainer(int id, final Player player, final CustomInventory inventory, ContainerType type) {
+    public CustomContainer(int id, final Player player, final ViewableCustomInventory inventory, ContainerType type) {
         super((net.minecraft.world.inventory.MenuType<?>) type, id);
         this.inv = inventory;
+        this.inv.startOpen(player);
 
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+        org.spongepowered.api.entity.living.player.Player spongePlayer = (org.spongepowered.api.entity.living.player.Player) player;
+        Container personalContainer = (Container) this.inv.personalInventorySupplier.apply(spongePlayer);
+        boolean isPlayerInventory = personalContainer instanceof PlayerInventory;
+        int personalContainerSize = personalContainer.getContainerSize();
+        int selfContainerIndex = 0;
+        int personalContainerIndex = 0;
+        for (Pair<Boolean, Integer> p : this.inv.info.useSelfContainer) {
+            if (p.getFirst()) {
+                this.addSlot(new Slot(this.inv, selfContainerIndex++, 0, 0));
+            } else if (isPlayerInventory) {
+                this.addSlot(new Slot(personalContainer, p.getSecond(), 0, 0));
+            } else if (personalContainerSize <= personalContainerIndex) {
+                this.addSlot(new Slot(player.getInventory(), p.getSecond(), 0, 0));
+            } else {
+                this.addSlot(new Slot(personalContainer, personalContainerIndex++, 0, 0));
+            }
+        }
+
+        /*for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             this.addSlot(new Slot(inventory, slot, 0, 0));
         }
 
@@ -50,7 +72,7 @@ public class CustomContainer extends AbstractContainerMenu {
         }
         for (int col = 0; col < 9; col++) {
             this.addSlot(new Slot(player.getInventory(), col, 0, 0));
-        }
+        }*/
 
         ((TrackedMenuBridge) inventory).bridge$trackContainerMenu(this);
     }
@@ -68,7 +90,7 @@ public class CustomContainer extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(final Player playerIn, final int index) {
-        // Almost 1:1 copy of ChestContainer#transferStackInSlot
+        // Almost 1:1 copy of ChestMenu#quickMoveStack
         ItemStack itemstack = ItemStack.EMPTY;
         final Slot slot = this.slots.get(index);
 
@@ -89,6 +111,8 @@ public class CustomContainer extends AbstractContainerMenu {
             } else {
                 slot.setChanged();
             }
+
+            this.sendAllDataToRemote();
         }
 
         return itemstack;

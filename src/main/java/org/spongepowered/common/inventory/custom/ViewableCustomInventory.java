@@ -28,7 +28,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.trading.Merchant;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
@@ -46,30 +45,30 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 // TODO how to do ticking for "fake" furnace type inventories?
 public class ViewableCustomInventory extends CustomInventory implements MenuProvider, SpongeMutableDataHolder {
 
     private final ContainerType type;
-    private final SpongeViewableInventoryBuilder.ContainerTypeInfo info;
-    private boolean vanilla = false;
+    public final SpongeViewableInventoryBuilder.ContainerTypeInfo info;
+
+    public Function<org.spongepowered.api.entity.living.player.Player, Inventory> personalInventorySupplier;
 
     private final Set<Player> viewers = new HashSet<>();
-    private final SimpleContainerData data;
     @Nullable private List<TradeOffer> tradeOffers;
 
     public ViewableCustomInventory(final PluginContainer plugin, final ContainerType type,
-            final SpongeViewableInventoryBuilder.ContainerTypeInfo info, final int size, final Lens lens, final SlotLensProvider provider,
+            final SpongeViewableInventoryBuilder.ContainerTypeInfo info,
+            final int size, final Lens lens, final SlotLensProvider provider,
+            final Function<org.spongepowered.api.entity.living.player.Player, Inventory> personalInventorySupplier,
             final List<Inventory> inventories, @Nullable final UUID identity, @Nullable final Carrier carrier) {
         super(plugin, size, lens, provider, inventories, identity, carrier);
+
         this.type = type;
         this.info = info;
-        this.data = this.info.dataProvider.get();
-    }
 
-    public ViewableCustomInventory vanilla() {
-        this.vanilla = true;
-        return this;
+        this.personalInventorySupplier = personalInventorySupplier;
     }
 
     public ContainerType getType() {
@@ -78,24 +77,19 @@ public class ViewableCustomInventory extends CustomInventory implements MenuProv
 
     @Override
     public void startOpen(final Player player) {
-        this.viewers.add(player); // TODO check if this is always called
+        this.viewers.add(player);
     }
 
     @Override
     public void stopOpen(final Player player) {
-        this.viewers.remove(player);  // TODO check if this is always called
+        this.viewers.remove(player);
+        // Syncing client inventory if its slots differed from slots that were set on opening CustomContainer
+        player.inventoryMenu.sendAllDataToRemote();
     }
 
     @Override
     public @Nullable AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory playerInv, Player player) {
-        if (this.vanilla) {
-            return this.info.containerProvider.createMenu(id, playerInv, player, this);
-        }
         return new CustomContainer(id, player, this, this.type);
-    }
-
-    public SimpleContainerData getData() {
-        return this.data;
     }
 
     @Override
