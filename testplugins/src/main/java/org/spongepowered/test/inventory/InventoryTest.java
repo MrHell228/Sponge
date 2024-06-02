@@ -54,12 +54,7 @@ import org.spongepowered.api.event.item.inventory.container.ClickContainerEvent;
 import org.spongepowered.api.event.item.inventory.container.InteractContainerEvent;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.item.ItemTypes;
-import org.spongepowered.api.item.inventory.Container;
-import org.spongepowered.api.item.inventory.ContainerTypes;
-import org.spongepowered.api.item.inventory.Inventory;
-import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackSnapshot;
-import org.spongepowered.api.item.inventory.Slot;
+import org.spongepowered.api.item.inventory.*;
 import org.spongepowered.api.item.inventory.entity.Hotbar;
 import org.spongepowered.api.item.inventory.entity.PrimaryPlayerInventory;
 import org.spongepowered.api.item.inventory.equipment.EquipmentType;
@@ -81,6 +76,8 @@ import org.spongepowered.test.LoadableModule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Plugin("inventorytest")
 public final class InventoryTest implements LoadableModule {
@@ -98,6 +95,18 @@ public final class InventoryTest implements LoadableModule {
         builder.addChild(Command.builder().executor(this::enderchest).build(), "ender");
         builder.addChild(Command.builder().executor(this::villager).build(), "villager");
         builder.addChild(Command.builder().executor(this::horse).build(), "horse");
+
+        builder.addChild(Command.builder().executor(this::chest).build(), "chest");
+        builder.addChild(Command.builder().executor(this::furnace).build(), "furnace");
+        builder.addChild(Command.builder().executor(this::anvil).build(), "anvil");
+        builder.addChild(Command.builder().executor(this::craft).build(), "craft");
+        builder.addChild(Command.builder().executor(this::enchant).build(), "enchant");
+        builder.addChild(Command.builder().executor(this::cartography).build(), "cartography");
+        builder.addChild(Command.builder().executor(this::loom).build(), "loom");
+        builder.addChild(Command.builder().executor(this::merchant).build(), "merchant");
+        builder.addChild(Command.builder().executor(this::lectern).build(), "lectern");
+
+        builder.addChild(Command.builder().executor(this::self).build(), "self");
         event.register(this.plugin, builder.build(), "inventorytest");
     }
 
@@ -133,6 +142,62 @@ public final class InventoryTest implements LoadableModule {
             return CommandResult.error(Component.text("Must be run ingame by a player"));
         }
         player.openInventory(player.enderChestInventory());
+        return CommandResult.success();
+    }
+
+    private CommandResult chest(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.GENERIC_9X6.get());
+    }
+    private CommandResult furnace(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.FURNACE.get());
+    }
+    private CommandResult anvil(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.ANVIL.get());
+    }
+    private CommandResult craft(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.CRAFTING.get());
+    }
+    private CommandResult enchant(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.ENCHANTMENT.get());
+    }
+    private CommandResult cartography(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.CARTOGRAPHY_TABLE.get());
+    }
+    private CommandResult loom(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.LOOM.get());
+    }
+    private CommandResult merchant(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.MERCHANT.get());
+    }
+    private CommandResult lectern(CommandContext commandContext) {
+        return inv(commandContext, ContainerTypes.LECTERN.get());
+    }
+    private CommandResult inv(CommandContext ctx, ContainerType type) {
+        final ServerPlayer player = ctx.cause().first(ServerPlayer.class).get();
+
+        ViewableInventory view = ViewableInventory.builder()
+                .type(type)
+                //.dummySlots(1, 0).item(ItemStack.of(ItemTypes.IRON_BLOCK).createSnapshot())
+                //.dummySlots(1, 1).item(ItemStack.of(ItemTypes.GOLD_BLOCK).createSnapshot())
+                .completeStructure()
+                .plugin(this.plugin)
+                .build();
+        player.openInventory(view);
+
+        return CommandResult.success();
+    }
+    private CommandResult self(CommandContext ctx) {
+        final ServerPlayer player = ctx.cause().first(ServerPlayer.class).get();
+        ViewableInventory.Builder.BuildingStep b = ViewableInventory.builder()
+                .type(ContainerTypes.GENERIC_9X6);
+
+        List<Slot> slots = player.inventory().slots();
+        b.slotsAtIndizes(slots, IntStream.range(0, slots.size()).boxed().collect(Collectors.toList()));
+
+        player.openInventory(b
+                .completeStructure()
+                .plugin(this.plugin)
+                .build());
         return CommandResult.success();
     }
 
@@ -292,8 +357,8 @@ public final class InventoryTest implements LoadableModule {
         final Inventory inv27Slots = Inventory.builder().slots(27).completeStructure().plugin(plugin).build();
         final Inventory inv27Slots2 = Inventory.builder().slots(27).completeStructure().plugin(plugin).build();
         final ViewableInventory doubleMyInventory = ViewableInventory.builder().type(ContainerTypes.GENERIC_9X6.get())
-                .grid(inv27Slots.slots(), Vector2i.from(9, 3), Vector2i.from(0, 0))
-                .grid(inv27Slots2.slots(), Vector2i.from(9, 3), Vector2i.from(0, 3))
+                //.grid(inv27Slots.slots(), Vector2i.from(9, 3), Vector2i.from(0, 0))
+                //.grid(inv27Slots2.slots(), Vector2i.from(9, 3), Vector2i.from(0, 3))
                 .completeStructure()
                 .carrier(player)
                 .plugin(plugin)
