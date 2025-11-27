@@ -79,6 +79,7 @@ import org.spongepowered.plugin.PluginContainer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -145,8 +146,12 @@ public final class SpongeLifecycle implements Lifecycle {
                 holder.streamRegistries().collect(Collectors.toMap(org.spongepowered.api.registry.Registry::type, Function.identity()));
 
         this.game.eventManager().post(new AbstractRegisterRegistryValueEvent.GameScopedImpl(Cause.of(EventContext.empty(), this.game), this.game, map));
-        map.values().forEach(r -> ((WritableRegistryBridge<?>) r).bridge$markEventCalled());
+
+        final Predicate<org.spongepowered.api.registry.Registry<?>> isBuiltin = registry ->
+                registry.type().root().equals(RegistryRoots.MINECRAFT);
+        holder.streamRegistries().filter(isBuiltin.negate()).forEach(r -> ((WritableRegistryBridge<?>) r).bridge$markEventCalled());
         holder.registryHolder().freezeSpongeDynamicRegistries(false);
+        holder.streamRegistries().filter(isBuiltin).forEach(r -> ((WritableRegistryBridge<?>) r).bridge$markEventCalled());
     }
 
     public void endEstablishGlobalRegistries() {
