@@ -40,6 +40,14 @@ import java.util.Optional;
 
 public class SpongeToolRuleFactory implements ToolRule.Factory {
 
+    private static HolderSet<Block> tagHolderSet(final Tag<BlockType> blockTypeTag) {
+        final var tag = ((TagBridge<Block>) blockTypeTag).bridge$asVanillaTag();
+        return BuiltInRegistries.acquireBootstrapRegistrationLookup(BuiltInRegistries.BLOCK)
+            .get(tag)
+            .map(hs -> (HolderSet<Block>) hs)
+            .orElse(HolderSet.empty());
+    }
+
     @Override
     public ToolRule minesAndDrops(final List<BlockType> blocks, final double speed) {
         // TODO is Holder::direct allowed here?
@@ -48,10 +56,8 @@ public class SpongeToolRuleFactory implements ToolRule.Factory {
     }
 
     @Override
-    public ToolRule minesAndDrops(final Tag<BlockType> blockTypeTag, final double speed) {
-        final var tag = ((TagBridge<Block>) blockTypeTag).bridge$asVanillaTag();
-        final var holderSet = BuiltInRegistries.BLOCK.get(tag).map(hs -> (HolderSet<Block>) hs).orElse(HolderSet.empty());
-        return (ToolRule) (Object) Tool.Rule.minesAndDrops(holderSet, (float) speed);
+    public ToolRule minesAndDrops(final Tag<BlockType> tag, final double speed) {
+        return (ToolRule) (Object) Tool.Rule.minesAndDrops(tagHolderSet(tag), (float) speed);
     }
 
     @SuppressWarnings("deprecation")
@@ -63,10 +69,8 @@ public class SpongeToolRuleFactory implements ToolRule.Factory {
     }
 
     @Override
-    public ToolRule deniesDrops(final Tag<BlockType> blockTypeTag) {
-        final var tag = ((TagBridge<Block>) blockTypeTag).bridge$asVanillaTag();
-        final var holderSet = BuiltInRegistries.BLOCK.get(tag).map(hs -> (HolderSet<Block>) hs).orElse(HolderSet.empty());
-        return (ToolRule) (Object) Tool.Rule.deniesDrops(holderSet);
+    public ToolRule deniesDrops(final Tag<BlockType> tag) {
+        return (ToolRule) (Object) Tool.Rule.deniesDrops(tagHolderSet(tag));
     }
 
     @SuppressWarnings("deprecation")
@@ -77,10 +81,8 @@ public class SpongeToolRuleFactory implements ToolRule.Factory {
     }
 
     @Override
-    public ToolRule overrideSpeed(final Tag<BlockType> blockTypeTag, final double speed) {
-        final var tag = ((TagBridge<Block>) blockTypeTag).bridge$asVanillaTag();
-        final var holderSet = BuiltInRegistries.BLOCK.get(tag).map(hs -> (HolderSet<Block>) hs).orElse(HolderSet.empty());
-        return (ToolRule) (Object) Tool.Rule.overrideSpeed(holderSet, (float) speed);
+    public ToolRule overrideSpeed(final Tag<BlockType> tag, final double speed) {
+        return (ToolRule) (Object) Tool.Rule.overrideSpeed(tagHolderSet(tag), (float) speed);
     }
 
     @SuppressWarnings("deprecation")
@@ -92,10 +94,8 @@ public class SpongeToolRuleFactory implements ToolRule.Factory {
     }
 
     @Override
-    public ToolRule forTag(final Tag<BlockType> blockTypeTag, @Nullable final Double speed, @Nullable final Boolean drops) {
+    public ToolRule forTag(final Tag<BlockType> tag, @Nullable final Double speed, @Nullable final Boolean drops) {
         // See Tool#forTag
-        final var tag = ((TagBridge<Block>) blockTypeTag).bridge$asVanillaTag();
-        final var holderSet = BuiltInRegistries.BLOCK.get(tag).map(hs -> (HolderSet<Block>) hs).orElse(HolderSet.empty());
-        return (ToolRule) (Object) new Tool.Rule(holderSet, Optional.ofNullable(speed).map(Double::floatValue), Optional.ofNullable(drops));
+        return (ToolRule) (Object) new Tool.Rule(tagHolderSet(tag), Optional.ofNullable(speed).map(Double::floatValue), Optional.ofNullable(drops));
     }
 }
